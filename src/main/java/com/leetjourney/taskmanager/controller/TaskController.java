@@ -24,6 +24,7 @@ public class TaskController {
     @GetMapping("/search")
     public ResponseEntity<Map<String, Object>> searchTasks(
             @RequestParam(required = false) String title,
+            @RequestParam(required = false) String categoryName,
             @RequestParam(required = false) Boolean taskStatus,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -31,7 +32,7 @@ public class TaskController {
             @RequestParam(defaultValue = "DESC") String sortDir) {
 
         return ResponseEntity.ok(
-                taskService.searchTasks(title, taskStatus, page, size, sortBy, sortDir)
+                taskService.searchTasks(title, categoryName, taskStatus, page, size, sortBy, sortDir)
         );
     }
 
@@ -68,9 +69,8 @@ public class TaskController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        taskService.deleteTask(id);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<String> deleteTask(@PathVariable Long id) {
+        return ResponseEntity.ok(taskService.deleteTask(id));
     }
 
     @GetMapping("/taskStatus/{status}")
@@ -83,4 +83,3 @@ public class TaskController {
         return ResponseEntity.ok(taskService.searchTasksByTitle(title));
     }
 }
-

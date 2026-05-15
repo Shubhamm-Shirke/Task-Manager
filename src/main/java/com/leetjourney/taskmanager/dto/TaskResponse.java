@@ -1,8 +1,6 @@
 package com.leetjourney.taskmanager.dto;
 
-import com.leetjourney.taskmanager.entity.Category;
 import lombok.Builder;
-import lombok.Data;
 
 import java.time.LocalDateTime;
 
@@ -11,7 +9,7 @@ public record TaskResponse(
         Long id,
         String title,
         String description,
-        Boolean completed,
+        Boolean taskStatus,
         LocalDateTime createdAt,
         CategoryResponse category
 ) {

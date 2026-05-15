@@ -5,15 +5,19 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
-// @Repository // Not necessary, JpaRepository already has it
-public interface TaskRepository extends JpaRepository<Task, Long> {
+ @Repository
+public interface TaskRepository extends JpaRepository<Task, Long> , JpaSpecificationExecutor<Task> {
 
     // Method Name Query
     // SELECT * FROM tasks WHERE taskStatus = :true/false/0/1
@@ -41,4 +45,10 @@ public interface TaskRepository extends JpaRepository<Task, Long> {
                                                  Pageable pageable);
 
     Optional<Task> findByTitle(String title);
+
+     @EntityGraph(attributePaths = "category")
+     Page<Task> findAll(Pageable pageable);
+
+     @EntityGraph(attributePaths = "category")
+     Page<Task> findAll(Specification specification, Pageable pageable);
 }

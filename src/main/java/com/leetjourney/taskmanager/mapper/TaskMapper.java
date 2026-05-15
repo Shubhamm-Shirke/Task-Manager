@@ -46,7 +46,7 @@ public class TaskMapper {
                 .id(task.getId())
                 .title(task.getTitle())
                 .description(task.getDescription())
-                .completed(task.getTaskStatus())
+                .taskStatus(task.getTaskStatus())
                 .createdAt(task.getCreatedAt())
                 .category(categoryResponse)
                 .build();

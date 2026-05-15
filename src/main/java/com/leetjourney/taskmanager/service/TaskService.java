@@ -1,5 +1,6 @@
 package com.leetjourney.taskmanager.service;
 
+import com.leetjourney.taskmanager.config.TaskSpecifications;
 import com.leetjourney.taskmanager.dto.TaskRequest;
 import com.leetjourney.taskmanager.dto.TaskResponse;
 import com.leetjourney.taskmanager.entity.Task;
@@ -16,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -40,13 +42,16 @@ public class TaskService {
             value = "searchTasks",
             key = "#title + '-' + #taskStatus + '-' + #page + '-' + #size + '-' + #sortBy + '-' + #sortDir"
     )
-    public Map<String, Object> searchTasks(String title, Boolean taskStatus,
+    public Map<String, Object> searchTasks(String title, String categoryName,
+                                           Boolean taskStatus,
                                            int page, int size,
                                            String sortBy, String sortDir) {
 
         int pageNumber = (page > 0) ? page - 1 : 0;
         Pageable pageable = buildPageable(pageNumber, size, sortBy, sortDir);
-        Page<Task> taskPage = fetchTaskPage(title, taskStatus, pageable);
+        Specification<Task> spec = TaskSpecifications.withFilters(title,categoryName,taskStatus);
+//        Page<Task> taskPage = fetchTaskPage(title, taskStatus, pageable);
+        Page<Task> taskPage = taskRepository.findAll(spec,pageable)     ;
         return buildPagedResponse(taskPage);
     }
 
@@ -111,10 +116,11 @@ public class TaskService {
                     @CacheEvict(value = "searchTasks", allEntries = true)
             }
     )
-    public void deleteTask(Long id) {
+    public String deleteTask(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
         taskRepository.delete(task);
+        return "Task Deleted Successfully.";
     }
 
     // ── List queries (used by legacy list endpoints) ──────────────────────────
@@ -140,17 +146,17 @@ public class TaskService {
         return PageRequest.of(page, size, sort);
     }
 
-    private Page<Task> fetchTaskPage(String title, Boolean taskStatus, Pageable pageable) {
-        if (title != null && taskStatus != null) {
-            return taskRepository.findByTitleContainingAndTaskStatus(title, taskStatus, pageable);
-        } else if (title != null) {
-            return taskRepository.findByTitleContainingIgnoreCase(title, pageable);
-        } else if (taskStatus != null) {
-            return taskRepository.findByTaskStatus(taskStatus, pageable);
-        } else {
-            return taskRepository.findAll(pageable);
-        }
-    }
+//    private Page<Task> fetchTaskPage(String title, Boolean taskStatus, Pageable pageable) {
+//        if (title != null && taskStatus != null) {
+//            return taskRepository.findByTitleContainingAndTaskStatus(title, taskStatus, pageable);
+//        } else if (title != null) {
+//            return taskRepository.findByTitleContainingIgnoreCase(title, pageable);
+//        } else if (taskStatus != null) {
+//            return taskRepository.findByTaskStatus(taskStatus, pageable);
+//        } else {
+//            return taskRepository.findAll(pageable);
+//        }
+//    }
 
     private Map<String, Object> buildPagedResponse(Page<Task> taskPage) {
 
@@ -159,7 +165,7 @@ public class TaskService {
 //                        .id(task.getId())
 //                        .title(task.getTitle())
 //                        .description(task.getDescription())
-//                        .completed(task.getTaskStatus())
+//                        .taskStatus(task.getTaskStatus())
 //                        .createdAt(task.getCreatedAt())
 //                        .category(
 //                                CategoryResponse.builder()
