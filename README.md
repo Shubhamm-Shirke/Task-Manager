@@ -27,10 +27,6 @@ This is a RESTful API for a task management system. It allows users to create, r
 - Lombok
 - Maven
 
-## Prerequisites
-
-- Java 21 or higher
-- Maven 3.6+
 
 ## API Endpoints
 
