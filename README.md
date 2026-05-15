@@ -1,9 +1,5 @@
 # Task Manager
 
-## YouTube Playlist
-
-Check out the full "Spring Boot Beginner to Intermediate" course: https://www.youtube.com/playlist?list=PLJce2FcDFtxL-3y86miLr_xLB5FsbK8GJ
-
 ## Description
 
 This is a RESTful API for a task management system. It allows users to create, read, update, delete, and search tasks and categories. Tasks have properties like title, description, completion status, and creation date. Categories can be created and retrieved to organize tasks.
@@ -17,7 +13,6 @@ This is a RESTful API for a task management system. It allows users to create, r
 - Input validation
 - Global exception handling
 - Application info endpoints
-- H2 database console
 - Spring Boot Actuator for monitoring
 
 ## Technologies Used
@@ -28,7 +23,7 @@ This is a RESTful API for a task management system. It allows users to create, r
 - Spring Web
 - Spring Boot Actuator
 - Validation
-- H2 Database
+- MYSQL Database
 - Lombok
 - Maven
 
@@ -80,7 +75,7 @@ All task endpoints are prefixed with `/api/v1/tasks`.
 - Returns paginated search results.
 
 ### Get Tasks by Completion Status
-- **GET** `/api/v1/tasks/completed/{status}`
+- **GET** `/api/v1/tasks/taskStatus/{status}`
 - Path Variable: `status` (boolean)
 - Returns list of tasks.
 
@@ -109,16 +104,11 @@ All category endpoints are prefixed with `/api/v1/categories`.
 - **GET** `/api/v1/info`
 - Returns application name, version, and max tasks per page.
 
-#### Get Advanced App Info
-- **GET** `/api/v1/info-advanced`
-- Returns application name, version, and max tasks per page.
 
 ## Database
 
-The application uses H2 in-memory database for development. The H2 console is available at `http://localhost:8080/h2-console` with the following credentials:
-- JDBC URL: `jdbc:h2:mem:taskdb`
-- Username: `sa`
-- Password: `password`
+The application uses MYSQL database for development. 
+
 
 ## Monitoring
 
@@ -131,19 +121,4 @@ Spring Boot Actuator endpoints are exposed for monitoring and management. Availa
 - `/actuator/beans` - Spring beans
 - `/actuator/mappings` - Request mappings
 
-## Getting Started
 
-1. Clone the repository.
-2. Ensure Java 21 and Maven are installed.
-3. Navigate to the project directory.
-4. Run `mvnw spring-boot:run` to start the application.
-5. The API will be available at `http://localhost:8080`.
-6. Access H2 console at `http://localhost:8080/h2-console`.
-7. View actuator endpoints at `http://localhost:8080/actuator/`.
-
-## License
-
-This work is licensed under the Creative Commons Attribution-NonCommercial 4.0 International License.
-To view a copy of this license, visit https://creativecommons.org/licenses/by-nc/4.0/
-
-Refer to the LICENSE file for details.
