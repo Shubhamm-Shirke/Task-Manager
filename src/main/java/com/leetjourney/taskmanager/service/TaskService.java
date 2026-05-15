@@ -1,6 +1,5 @@
 package com.leetjourney.taskmanager.service;
 
-import com.leetjourney.taskmanager.dto.CategoryResponse;
 import com.leetjourney.taskmanager.dto.TaskRequest;
 import com.leetjourney.taskmanager.dto.TaskResponse;
 import com.leetjourney.taskmanager.entity.Task;
@@ -9,12 +8,19 @@ import com.leetjourney.taskmanager.exception.TaskNotFoundException;
 import com.leetjourney.taskmanager.mapper.TaskMapper;
 import com.leetjourney.taskmanager.repository.TaskRepository;
 import jakarta.transaction.Transactional;
-import org.springframework.data.domain.*;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 @Service
 @Transactional
@@ -30,6 +36,10 @@ public class TaskService {
 
     // ── Paginated search (used by /search endpoint) ──────────────────────────
 
+    @Cacheable(
+            value = "searchTasks",
+            key = "#title + '-' + #taskStatus + '-' + #page + '-' + #size + '-' + #sortBy + '-' + #sortDir"
+    )
     public Map<String, Object> searchTasks(String title, Boolean taskStatus,
                                            int page, int size,
                                            String sortBy, String sortDir) {
@@ -40,6 +50,10 @@ public class TaskService {
         return buildPagedResponse(taskPage);
     }
 
+    @Cacheable(
+            value = "allTasks",
+            key = "#page + '-' + #size + '-' + #sortBy + '-' + #sortDir"
+    )
     public Map<String, Object> getAllTasks(int page, int size,
                                            String sortBy, String sortDir) {
 
@@ -51,12 +65,19 @@ public class TaskService {
 
     // ── Single-task operations ────────────────────────────────────────────────
 
+    @Cacheable(value = "singleTask", key = "#id")
     public TaskResponse getTaskById(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
         return taskMapper.toResponse(task);
     }
 
+    @Caching(
+            evict = {
+                    @CacheEvict(value = "allTasks", allEntries = true),
+                    @CacheEvict(value = "searchTasks", allEntries = true),
+            }
+    )
     public TaskResponse createTask(TaskRequest request) {
         taskRepository.findByTitle(request.getTitle())
                 .ifPresent(exist -> {
@@ -66,6 +87,15 @@ public class TaskService {
         return taskMapper.toResponse(saved);
     }
 
+    @Caching(
+            put = {
+                    @CachePut(value = "singleTask", key = "#id"),
+            },
+            evict = {
+                    @CacheEvict(value = "allTasks", allEntries = true),
+                    @CacheEvict(value = "searchTasks", allEntries = true),
+            }
+    )
     public TaskResponse updateTask(Long id, TaskRequest request) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
@@ -73,6 +103,14 @@ public class TaskService {
         return taskMapper.toResponse(taskRepository.save(task));
     }
 
+
+    @Caching(
+            evict = {
+                    @CacheEvict(value = "singleTask", key = "#id"),
+                    @CacheEvict(value = "allTasks", allEntries = true),
+                    @CacheEvict(value = "searchTasks", allEntries = true)
+            }
+    )
     public void deleteTask(Long id) {
         Task task = taskRepository.findById(id)
                 .orElseThrow(() -> new TaskNotFoundException(id));
