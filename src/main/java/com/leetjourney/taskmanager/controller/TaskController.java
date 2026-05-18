@@ -1,13 +1,23 @@
 package com.leetjourney.taskmanager.controller;
 
+import com.leetjourney.taskmanager.dto.FileUploadResponse;
 import com.leetjourney.taskmanager.dto.TaskRequest;
 import com.leetjourney.taskmanager.dto.TaskResponse;
 import com.leetjourney.taskmanager.service.TaskService;
 import jakarta.validation.Valid;
+import org.apache.poi.ss.formula.functions.T;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 
@@ -16,6 +26,9 @@ import java.util.Map;
 public class TaskController {
 
     private final TaskService taskService;
+
+//    @Value("${file.size}")
+//    private DataSize maxSize;
 
     public TaskController(TaskService taskService) {
         this.taskService = taskService;
@@ -52,7 +65,7 @@ public class TaskController {
     public ResponseEntity<TaskResponse> getTaskById(@PathVariable Long id) {
 //        return ResponseEntity.status(HttpStatus.OK).body(taskService.getTaskById(id));
 //        return ResponseEntity.ok(taskService.getTaskById(id));
-        return new ResponseEntity<>(taskService.getTaskById(id),HttpStatus.OK);
+        return new ResponseEntity<>(taskService.getTaskById(id), HttpStatus.OK);
     }
 
     @PostMapping
@@ -82,4 +95,36 @@ public class TaskController {
     public ResponseEntity<List<TaskResponse>> searchTasksByTitle(@RequestParam String title) {
         return ResponseEntity.ok(taskService.searchTasksByTitle(title));
     }
+
+    @PostMapping("/upload")
+    public ResponseEntity<?> uploadFile(@RequestParam MultipartFile file) throws IOException {
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body(file.getOriginalFilename() + " File is empty");
+        }
+
+        if (file.getSize() > 4*1024*1024) {
+            return ResponseEntity.badRequest().body("Max size of file is 4 MB");
+        }
+
+        String originalFileName = file.getOriginalFilename();
+
+        if (originalFileName == null || !originalFileName.endsWith(".csv")) {
+            return ResponseEntity.badRequest().body("Only CSV format accepted");
+        }
+
+        String uniqueFileName = System.currentTimeMillis() + "_" + originalFileName;
+
+        String uploadDir = "uploads/";
+        File directory = new File(uploadDir);
+        if (!directory.exists()) {
+            directory.mkdir();
+        }
+
+        Path filePath = Paths.get(uploadDir).resolve(uniqueFileName);
+        Files.write(filePath, file.getBytes());
+
+        return ResponseEntity.ok(taskService.importTaskFile(file));
+    }
+
 }

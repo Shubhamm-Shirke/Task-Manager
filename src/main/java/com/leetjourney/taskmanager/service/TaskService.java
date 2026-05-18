@@ -1,13 +1,16 @@
 package com.leetjourney.taskmanager.service;
 
 import com.leetjourney.taskmanager.config.TaskSpecifications;
+import com.leetjourney.taskmanager.dto.FileUploadResponse;
 import com.leetjourney.taskmanager.dto.TaskRequest;
 import com.leetjourney.taskmanager.dto.TaskResponse;
+import com.leetjourney.taskmanager.entity.Category;
 import com.leetjourney.taskmanager.entity.Task;
 import com.leetjourney.taskmanager.exception.TaskAlreadyExistException;
 import com.leetjourney.taskmanager.exception.TaskNotFoundException;
 import com.leetjourney.taskmanager.mapper.TaskMapper;
 import com.leetjourney.taskmanager.repository.TaskRepository;
+import com.opencsv.CSVReader;
 import jakarta.transaction.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
@@ -19,10 +22,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.*;
 
 @Service
 @Transactional
@@ -30,10 +34,12 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
+    private final CategoryService  categoryService;
 
-    public TaskService(TaskRepository taskRepository, TaskMapper taskMapper) {
+    public TaskService(TaskRepository taskRepository, TaskMapper taskMapper, CategoryService categoryService) {
         this.taskRepository = taskRepository;
         this.taskMapper = taskMapper;
+        this.categoryService = categoryService;
     }
 
     // ── Paginated search (used by /search endpoint) ──────────────────────────
@@ -193,4 +199,70 @@ public class TaskService {
 
         return response;
     }
+
+    public FileUploadResponse importTaskFile(MultipartFile file) {
+        List<Task> tasks = new ArrayList<>();
+        long total = 0;
+        long success = 0;
+        long failed = 0;
+
+        try (
+                Reader reader = new InputStreamReader(file.getInputStream());
+                CSVReader csvReader = new CSVReader(reader);
+        ) {
+
+            List<String[]> rows = csvReader.readAll();
+
+            for (int i = 1; i < rows.size(); i++) {   // skip header
+                total++;
+
+                try {
+                    String[] row = rows.get(i);
+
+                    // validate column count
+                    if (row.length < 4) {
+                        failed++;
+                        continue;
+                    }
+
+                    String title = row[0].trim();
+                    String description = row[1].trim();
+                    Boolean taskStatus = Boolean.parseBoolean(row[2].trim());
+                    Long categoryId = Long.parseLong(row[3].trim());
+                    Category category = categoryService.findById(categoryId);
+                    
+                    // check duplicate in db
+                    if (taskRepository.findByTitle(title).isPresent()) {
+                        failed++;
+                        continue;
+                    }
+
+                    Task task = Task.builder()
+                            .title(title)
+                            .description(description)
+                            .taskStatus(taskStatus)
+                            .category(category)
+                            .build();
+
+                    tasks.add(task);
+                    success++;
+
+                } catch (RuntimeException e) {
+                    failed++;
+                }
+            }
+            taskRepository.saveAll(tasks);
+
+            return FileUploadResponse.builder()
+                    .message("File process successfully")
+                    .FailedCount(failed)
+                    .successCount(success)
+                    .totalCount(total)
+                    .build();
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to prossess csv file");
+        }
+    }
+
 }

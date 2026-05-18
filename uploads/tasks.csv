@@ -1,0 +1,6 @@
+title,description,taskStatus,category
+Fix login bug,Resolve the null pointer exception on login page,FALSE,1
+Write unit tests,Write unit tests for TaskService and TaskController,TRUE,1
+Update README,Add API documentation and setup instructions to README,FALSE,1
+Refactor database layer,Optimize queries and add proper indexing,FALSE,1
+Deploy to staging,Deploy latest build to staging environment and verify,TRUE,1
